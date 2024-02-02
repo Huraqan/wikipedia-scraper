@@ -1,5 +1,5 @@
 # POWER-DUDES Wiki-Scraper
-![python version](https://img.shields.io/badge/python-v3.12.1-green?logo=python) ![build version](https://img.shields.io/badge/build-v1.05-blue)
+![python version](https://img.shields.io/badge/python-v3.12.1-green?logo=python) ![build version](https://img.shields.io/badge/build-v0.06-blue)
 
 ## Description
 This script will query an API for a list of high ranking scumbags from vairous countries.
