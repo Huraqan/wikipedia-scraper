@@ -6,7 +6,6 @@ from pandas import DataFrame
 from bs4 import BeautifulSoup
 from requests import Session
 
-
 class WikipediaScraper:
     """
     WikipediaScraper class for scraping the first paragraph of country leaders biographies.
@@ -44,26 +43,6 @@ class WikipediaScraper:
         return self.session.get(
             self.base_url + endpoint, cookies=cookies, params=params
         )
-
-    # @try_except_decorator()
-    # def make_simple_request(self, url: str):
-    #     while True:
-    #         try:
-    #             return self.session.get(url)
-    #         except:
-    #             if input("\nCONNECTION ERROR! Try again? 'n' to quit : ") == "n":
-    #                 exit()
-
-    # @try_except_decorator()
-    # def make_api_request(self, endpoint="", cookies=None, params={}):
-    #     while True:
-    #         try:
-    #             return self.session.get(
-    #                 self.base_url + endpoint, cookies=cookies, params=params
-    #             )
-    #         except:
-    #             if input("\nCONNECTION ERROR! Try again? 'n' to quit : ") == "n":
-    #                 exit()
 
     def refresh_cookie(self) -> object:
         """Checks the API cookie status, returning the existing or new cookie object."""
@@ -162,10 +141,10 @@ class WikipediaScraper:
                 print("- Decomposing <sup> tag:", sup_tag.text)
                 sup_tag.decompose()
 
-            # Regex cleanup
+            ## Regex cleanup
             paragraph = self.clean_text(paragraph.text)
 
-            # Store
+            ## Store
             self.leaders_data[country][i]["paragraph"] = paragraph
 
             return paragraph[:70] + "..."
