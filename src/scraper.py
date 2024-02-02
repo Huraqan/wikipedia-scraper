@@ -16,7 +16,7 @@ class WikipediaScraper:
 
     def __init__(self, session: Session):
         self.base_url: str = "https://country-leaders.onrender.com"
-        self.country_endpoint: str = "/countries"
+        self.countries_endpoint: str = "/countries"
         self.leaders_endpoint: str = "/leaders"
         self.cookies_endpoint: str = "/cookie"
         self.check_endpoint: str = "/check"
@@ -24,87 +24,119 @@ class WikipediaScraper:
         self.session: Session = session
         self.cookie: object = self.request_cookie()
 
+    # def try_except_decorator(function):
+    #     def decorated(*args, **kwargs):
+    #         while True:
+    #             try:
+    #                 return function(*args, **kwargs)
+    #             except:
+    #                 while True:
+    #                     answer = input("\nConnection error! Try again? 'n' to quit : ")
+    #                     if answer == "n":
+    #                         exit()
+    #                     else:
+    #                         break
+
+    #     return decorated
+
+    # @try_except_decorator
+    def make_simple_request(self, url: str):
+        while True:
+            try:
+                return self.session.get(url)
+            except:
+                while True:
+                    answer = input("\nCONNECTION ERROR! Try again? 'n' to quit : ")
+                    if answer == "n":
+                        exit()
+                    else:
+                        break
+
+    # @try_except_decorator
+    def make_api_request(self, endpoint="", cookies=None, params={}):
+        while True:
+            try:
+                return self.session.get(
+                    self.base_url + endpoint, cookies=cookies, params=params
+                )
+            except:
+                while True:
+                    answer = input("\nCONNECTION ERROR! Try again? 'n' to quit : ")
+                    if answer == "n":
+                        exit()
+                    else:
+                        break
+
     def refresh_cookie(self) -> object:
         """Checks the API cookie status, returning the existing or new cookie object."""
-
         print("\nChecking if cookie is still valid...")
 
-        check_request = self.session.get(
-            self.base_url + self.check_endpoint, cookies=self.cookie
-        )
+        check_request = self.make_api_request(self.check_endpoint, self.cookie)
 
         match check_request.status_code:
             case 200:
-                print("\nCookie still valid.")
+                print(f"\nStatus: {check_request.status_code} Cookie still fresh. Using cookie.")
                 return self.cookie
             case 422:
-                print("\nCookie stale! Refreshing cookie...")
-            case _:
-                print(f"\nStatus: {check_request.status_code}")
-
+                print(f"\nStatus: {check_request.status_code} Cookie stale! Refreshing cookie...")
+            case 403:
+                print(f"\nStatus: {check_request.status_code} FORBIDDEN")
+        
         return self.request_cookie()
 
     def request_cookie(self) -> object:
         """Requests the API cookie and returns the new cookie object."""
-        print("\nRequesting a new cookie...")
+        while True:
+            print("\nRequesting a new cookie...")
 
-        cookie_request = self.session.get(self.base_url + self.cookies_endpoint)
+            cookie_request = self.make_api_request(self.cookies_endpoint)
+            
+            self.cookie = cookie_request.cookies
 
-        match cookie_request.status_code:
-            case 200:
-                print("Cookie request status: OK")
-            case 400:
-                print("Cookie request status: BAD REQUEST")
-            case 403:
-                print("Cookie request status: FORBIDDEN")
-            case 404:
-                print("Cookie request status: PAGE NOT FOUND")
-
-        if not cookie_request.status_code == 200:
-            return None
-
-        self.cookie = cookie_request.cookies
-
-        return self.cookie
+            match cookie_request.status_code:
+                case 200:
+                    print("Cookie request status: OK")
+                    return self.cookie
+                case 400:
+                    print("Cookie request status: BAD REQUEST")
+                case 403:
+                    print("Cookie request status: FORBIDDEN")
+                case 404:
+                    print("Cookie request status: PAGE NOT FOUND")
+            
+            answer = input("\nFailed to get a cookie, try again? 'n' to quit: ")
+            if answer == "n":
+                exit()
 
     def get_countries(self) -> list:
-        """Retrieve a list of supported countries from the API."""
-        countries_request = self.session.get(
-            self.base_url + self.country_endpoint, cookies=self.cookie
-        )
+        """Retrieves a list of supported countries from the API."""
+        countries_request = self.make_api_request(self.countries_endpoint, self.cookie)
         return countries_request.json()
 
     def get_leaders(self, country: str) -> None:
-        """
-        Retrieve and populate leaders_data with the leaders of a specific country.
-
-        - country (str): The name of the country for which leaders are retrieved.
-        """
+        """Retrieves and populate leaders_data with the leaders of a specific country."""
         print(f"\nRequesting leaders from {country.upper()}...")
 
-        req_leaders = self.session.get(
-            self.base_url + self.leaders_endpoint,
-            params={"country": country},
+        req_leaders = self.make_api_request(
+            endpoint=self.leaders_endpoint,
             cookies=self.refresh_cookie(),
+            params={"country": country},
         )
 
         country_leaders = req_leaders.json()
         self.leaders_data[country] = country_leaders
 
     def get_first_paragraph(self, wikipedia_url: str, country: str, i: int) -> str:
-        """
-        Retrieve and return the first paragraph from a Wikipedia URL.
-
-        - wikipedia_url (str): The URL of the Wikipedia page.
-        """
+        """Retrieves and returns the first paragraph from a Wikipedia URL."""
         print(f"\n{wikipedia_url}\n")
 
-        soup = BeautifulSoup(self.session.get(wikipedia_url).text, "html.parser")
+        wikipedia_request = self.make_simple_request(wikipedia_url)
+        soup = BeautifulSoup(wikipedia_request.text, "html.parser")
 
+        ## Narrowing it down to the content div
         content_div = soup.find(
             name="div", attrs={"class": "mw-content-ltr mw-parser-output"}
         )
-
         if content_div is None:
             print("\nCan't find ltr content div, searching for rtl content...")
             content_div = soup.find(
@@ -114,20 +146,27 @@ class WikipediaScraper:
             print("\nCan't find rtl content, continuing with full page...")
             content_div = soup
 
+        ## Cleaning of all intrusive and unnecessary divs
         for tag in content_div.find_all(name="div"):
             tag.decompose()
 
-        for tag in content_div.find_all(name="p"):
-            if not tag.find(name="b"):
+        ## Finding the first paragraph
+        for paragraph in content_div.find_all(name="p"):
+            if not paragraph.find(name="b"):
                 continue
 
-            for sup_tag in tag.find_all(name="sup"):
+            ## Deleting sup tags
+            for sup_tag in paragraph.find_all(name="sup"):
                 print("- Decomposing <sup> tag:", sup_tag.text)
                 sup_tag.decompose()
 
-            self.leaders_data[country][i]["paragraph"] = tag.text
+            # Regex cleanup
+            paragraph = self.clean_text(paragraph.text)
+            
+            # Store
+            self.leaders_data[country][i]["paragraph"] = paragraph
 
-            return tag.text
+            return paragraph[:70] + "..."
 
         return "\n\n    !!! NOTING FOUND !!!\n\n"
 
@@ -159,14 +198,14 @@ class WikipediaScraper:
 
     def to_json_file(self, filename: str):
         """
-        Store the data structure into a JSON file with the specified name.
+        Stores the data structure into a JSON file with the specified name.
         """
         with open(filename, "w") as file:
             json.dump(self.leaders_data, file)
 
     def to_csv_file(self, filename: str):
         """
-        Store the data structure into a CSV file with the specified name.
+        Stores the data structure into a CSV file with the specified name.
         """
         leaders_summary: list = []
 

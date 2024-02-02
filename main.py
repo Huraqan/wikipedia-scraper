@@ -37,18 +37,19 @@ if __name__ == "__main__":
         "\n=================================" +
         "\n"
     )
-    scraper = WikipediaScraper(Session())
-    
-    for country in pick_countries(scraper):
-        scraper.get_leaders(country)
-    
-    for (country, country_leaders) in scraper.leaders_data.items():
-        print("\n    country:", country)
+    with Session() as session:
+        scraper = WikipediaScraper(session)
         
-        for i, leader in enumerate(country_leaders):
-            first_paragraph = scraper.get_first_paragraph(leader["wikipedia_url"], country, i)
+        for country in pick_countries(scraper):
+            scraper.get_leaders(country)
+        
+        for (country, country_leaders) in scraper.leaders_data.items():
+            print("\n    country:", country)
             
-            print(f"\n{leader["first_name"]}: {scraper.clean_text(first_paragraph)}\n")
+            for i, leader in enumerate(country_leaders):
+                first_paragraph = scraper.get_first_paragraph(leader["wikipedia_url"], country, i)
+                
+                print(f"\n{leader["first_name"]}: {first_paragraph}\n")
     
     scraper.to_json_file("output_json.json")
     scraper.to_csv_file("output_csv.csv")
