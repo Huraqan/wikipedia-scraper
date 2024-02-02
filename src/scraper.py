@@ -6,10 +6,12 @@ from pandas import DataFrame
 from bs4 import BeautifulSoup
 from requests import Session
 
+
 class WikipediaScraper:
     """
     WikipediaScraper class for scraping the first paragraph of country leaders biographies.
-    ...
+    Will use an API to request a list of countries and their leaders and use that to locate
+    their wikipedia page.
     """
 
     def __init__(self, session: Session):
@@ -24,7 +26,7 @@ class WikipediaScraper:
 
     def refresh_cookie(self) -> object:
         """Checks the API cookie status, returning the existing or new cookie object."""
-        
+
         print("\nChecking if cookie is still valid...")
 
         check_request = self.session.get(
@@ -45,7 +47,7 @@ class WikipediaScraper:
     def request_cookie(self) -> object:
         """Requests the API cookie and returns the new cookie object."""
         print("\nRequesting a new cookie...")
-        
+
         cookie_request = self.session.get(self.base_url + self.cookies_endpoint)
 
         match cookie_request.status_code:
@@ -67,10 +69,8 @@ class WikipediaScraper:
 
     def get_countries(self) -> list:
         """Retrieve a list of supported countries from the API."""
-        # request countries and return list
         countries_request = self.session.get(
-            self.base_url + self.country_endpoint,
-            cookies=self.cookie
+            self.base_url + self.country_endpoint, cookies=self.cookie
         )
         return countries_request.json()
 
@@ -81,8 +81,7 @@ class WikipediaScraper:
         - country (str): The name of the country for which leaders are retrieved.
         """
         print(f"\nRequesting leaders from {country.upper()}...")
-        
-        # request the data and store as dict in leaders_data ... DICT!!!!!
+
         req_leaders = self.session.get(
             self.base_url + self.leaders_endpoint,
             params={"country": country},
@@ -91,33 +90,30 @@ class WikipediaScraper:
 
         country_leaders = req_leaders.json()
         self.leaders_data[country] = country_leaders
-        # self.leaders_data = {i: value for i, value in enumerate(req_leaders.json())}
-        # {key:value for (key,value) in dictonary.items()}
-        
-        # print("get leaders:", self.leaders_data)
 
-    def get_first_paragraph(self, wikipedia_url:str, country:str, i:int) -> str:
+    def get_first_paragraph(self, wikipedia_url: str, country: str, i: int) -> str:
         """
-        Retrieve the first paragraph from a Wikipedia URL.
+        Retrieve and return the first paragraph from a Wikipedia URL.
 
         - wikipedia_url (str): The URL of the Wikipedia page.
-
-        Returns:
-            str: The text of the first paragraph.
         """
         print(f"\n{wikipedia_url}\n")
 
         soup = BeautifulSoup(self.session.get(wikipedia_url).text, "html.parser")
-        
-        content_div = soup.find(name="div", attrs={"class": "mw-content-ltr mw-parser-output"})
-        
+
+        content_div = soup.find(
+            name="div", attrs={"class": "mw-content-ltr mw-parser-output"}
+        )
+
         if content_div is None:
             print("\nCan't find ltr content div, searching for rtl content...")
-            content_div = soup.find(name="div", attrs={"class": "mw-content-rtl mw-parser-output"})
+            content_div = soup.find(
+                name="div", attrs={"class": "mw-content-rtl mw-parser-output"}
+            )
         if content_div is None:
             print("\nCan't find rtl content, continuing with full page...")
             content_div = soup
-        
+
         for tag in content_div.find_all(name="div"):
             tag.decompose()
 
@@ -137,6 +133,11 @@ class WikipediaScraper:
 
     @staticmethod
     def clean_text(text: str) -> str:
+        """
+        Returns the passed string cleaned of (most) undesired parts.
+        Removes brackets and spacial parentheses cases, and their content.
+        Removes extra successive commas, and all extra spaces.
+        """
         compiled_brackets = compile(r"\[[^\]]*\]")
         compiled_parentheses = compile(r"\(/[^\)]+\)")
         compiled_commas = compile(r" ?,( *,)*")
@@ -156,36 +157,28 @@ class WikipediaScraper:
 
         return text
 
-    def to_json_file(self, filepath : str):
+    def to_json_file(self, filename: str):
         """
-        Store the data structure into a JSON file.
-
-        - filepath (str): The path to the JSON file.
+        Store the data structure into a JSON file with the specified name.
         """
-        with open(filepath, "w") as file:
+        with open(filename, "w") as file:
             json.dump(self.leaders_data, file)
 
-    def to_csv_file(self, filepath : str):
-        # DataFrame(self.leaders_data).to_csv(filepath)
-        
-        # field_names = ["Country", "Lea    der", "First Paragraph"]
-        leaders_summary : list = []
-        
-        for (country, leaders) in self.leaders_data.items():
-            # print("country:", country, "leaders;:", leaders)
-            
+    def to_csv_file(self, filename: str):
+        """
+        Store the data structure into a CSV file with the specified name.
+        """
+        leaders_summary: list = []
+
+        for country, leaders in self.leaders_data.items():
             for leader in leaders:
-                leaders_summary.append({
-                    "Country": country,
-                    "Leader": f"{leader["first_name"]} {leader["last_name"]}",
-                    "First Paragraph": leader["paragraph"]
+                leaders_summary.append(
+                    {
+                        "Country": country,
+                        "Leader": f"{leader["first_name"]} {leader["last_name"]}",
+                        "First Paragraph": leader["paragraph"],
                     }
                 )
-        
+
         df = DataFrame.from_dict(leaders_summary)
-        df.to_csv (filepath, index=False, header=True)
-        
-        # with open(filepath, "w", encoding='Windows-1252') as csvfile:
-        #     writer = csv.DictWriter(csvfile, fieldnames=field_names)
-        #     writer.writeheader()
-        #     writer.writerows(leaders_summary)
+        df.to_csv(filename, index=False, header=True)

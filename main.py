@@ -26,14 +26,16 @@ def pick_countries(scraper) -> list:
         if len(answer_list) > 0:
             return answer_list
         else:
-            print("\nWrong input. Sheeeeeesh... Two letters per country, separate by a comma.\n")
+            print("\nWrong input. Sheeeeeesh... Two letters per country, separated by a comma.\n")
 
 
 if __name__ == "__main__":
     print(
-        "\n=================================\n" +
-        "||  POWER-DUDES Wiki-Scraper   ||" +
-        "\n=================================\n"
+        "\n" +
+        "\n=================================" +
+        "\n||  POWER-DUDES Wiki-Scraper   ||" +
+        "\n=================================" +
+        "\n"
     )
     scraper = WikipediaScraper(Session())
     
@@ -41,7 +43,7 @@ if __name__ == "__main__":
         scraper.get_leaders(country)
     
     for (country, country_leaders) in scraper.leaders_data.items():
-        print("\n    country:", country)#, "country_leaders:", type(country_leaders), country_leaders)
+        print("\n    country:", country)
         
         for i, leader in enumerate(country_leaders):
             first_paragraph = scraper.get_first_paragraph(leader["wikipedia_url"], country, i)

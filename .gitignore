@@ -1,3 +1,7 @@
+# ouput files
+output_json.json
+output_csv.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
