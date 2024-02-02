@@ -24,39 +24,46 @@ class WikipediaScraper:
         self.session: Session = session
         self.cookie: object = self.request_cookie()
 
-    # def try_except_decorator(function):
-    #     def decorated(*args, **kwargs):
-    #         while True:
-    #             try:
-    #                 return function(*args, **kwargs)
-    #             except:
-    #                 answer = input("\nCONNECTION ERROR! Try again? 'n' to quit : ")
-    #                 if answer == "n":
-    #                     exit()
-    #     return decorated
+    def try_except_decorator(function):
+        def decorated(*args, **kwargs):
+            while True:
+                try:
+                    return function(*args, **kwargs)
+                except:
+                    if input("\nCONNECTION ERROR! Try again? 'n' to quit : ") == "n":
+                        exit()
 
-    # @try_except_decorator
+        return decorated
+
+    @try_except_decorator
     def make_simple_request(self, url: str):
-        while True:
-            try:
-                return self.session.get(url)
-            except:
-                answer = input("\nCONNECTION ERROR! Try again? 'n' to quit : ")
-                if answer == "n":
-                    exit()
+        return self.session.get(url)
 
-    # @try_except_decorator
+    @try_except_decorator
     def make_api_request(self, endpoint="", cookies=None, params={}):
-        while True:
-            try:
-                return self.session.get(
-                    self.base_url + endpoint, cookies=cookies, params=params
-                )
-            except:
-                answer = input("\nCONNECTION ERROR! Try again? 'n' to quit : ")
-                if answer == "n":
-                    exit()
+        return self.session.get(
+            self.base_url + endpoint, cookies=cookies, params=params
+        )
 
+    # @try_except_decorator()
+    # def make_simple_request(self, url: str):
+    #     while True:
+    #         try:
+    #             return self.session.get(url)
+    #         except:
+    #             if input("\nCONNECTION ERROR! Try again? 'n' to quit : ") == "n":
+    #                 exit()
+
+    # @try_except_decorator()
+    # def make_api_request(self, endpoint="", cookies=None, params={}):
+    #     while True:
+    #         try:
+    #             return self.session.get(
+    #                 self.base_url + endpoint, cookies=cookies, params=params
+    #             )
+    #         except:
+    #             if input("\nCONNECTION ERROR! Try again? 'n' to quit : ") == "n":
+    #                 exit()
 
     def refresh_cookie(self) -> object:
         """Checks the API cookie status, returning the existing or new cookie object."""
@@ -66,13 +73,17 @@ class WikipediaScraper:
 
         match check_request.status_code:
             case 200:
-                print(f"\nStatus: {check_request.status_code} Cookie still fresh. Using cookie.")
+                print(
+                    f"\nStatus: {check_request.status_code} Cookie still fresh. Using cookie."
+                )
                 return self.cookie
             case 422:
-                print(f"\nStatus: {check_request.status_code} Cookie stale! Refreshing cookie...")
+                print(
+                    f"\nStatus: {check_request.status_code} Cookie stale! Refreshing cookie..."
+                )
             case 403:
                 print(f"\nStatus: {check_request.status_code} FORBIDDEN")
-        
+
         return self.request_cookie()
 
     def request_cookie(self) -> object:
@@ -81,7 +92,7 @@ class WikipediaScraper:
             print("\nRequesting a new cookie...")
 
             cookie_request = self.make_api_request(self.cookies_endpoint)
-            
+
             self.cookie = cookie_request.cookies
 
             match cookie_request.status_code:
@@ -94,7 +105,7 @@ class WikipediaScraper:
                     print("Cookie request status: FORBIDDEN")
                 case 404:
                     print("Cookie request status: PAGE NOT FOUND")
-            
+
             answer = input("\nFailed to get a cookie, try again? 'n' to quit: ")
             if answer == "n":
                 exit()
@@ -108,13 +119,13 @@ class WikipediaScraper:
         """Retrieves and populate leaders_data with the leaders of a specific country."""
         print(f"\nRequesting leaders from {country.upper()}...")
 
-        req_leaders = self.make_api_request(
+        leaders_request = self.make_api_request(
             endpoint=self.leaders_endpoint,
             cookies=self.refresh_cookie(),
             params={"country": country},
         )
 
-        country_leaders = req_leaders.json()
+        country_leaders = leaders_request.json()
         self.leaders_data[country] = country_leaders
 
     def get_first_paragraph(self, wikipedia_url: str, country: str, i: int) -> str:
@@ -129,12 +140,12 @@ class WikipediaScraper:
             name="div", attrs={"class": "mw-content-ltr mw-parser-output"}
         )
         if content_div is None:
-            print("\nCan't find ltr content div, searching for rtl content...")
+            print("Can't find ltr content div, searching for rtl content...\n")
             content_div = soup.find(
                 name="div", attrs={"class": "mw-content-rtl mw-parser-output"}
             )
         if content_div is None:
-            print("\nCan't find rtl content, continuing with full page...")
+            print("Can't find rtl content, continuing with full page...\n")
             content_div = soup
 
         ## Cleaning of all intrusive and unnecessary divs
@@ -153,7 +164,7 @@ class WikipediaScraper:
 
             # Regex cleanup
             paragraph = self.clean_text(paragraph.text)
-            
+
             # Store
             self.leaders_data[country][i]["paragraph"] = paragraph
 

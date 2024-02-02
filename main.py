@@ -20,13 +20,13 @@ def pick_countries(scraper) -> list:
         if answer == "all":
             return countries
         
-        answer_list = answer.replace(" ", "").split(",")
+        answer_list = answer.replace(" ", "").lower().split(",")
         answer_list = [answer for answer in answer_list if answer in countries]
         
         if len(answer_list) > 0:
             return answer_list
         else:
-            print("\nWrong input. Sheeeeeesh... Two letters per country, separated by a comma.\n")
+            print("\nWrong input. Two letters per country, separated by a comma.\n")
 
 
 if __name__ == "__main__":
