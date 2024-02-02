@@ -30,13 +30,9 @@ class WikipediaScraper:
     #             try:
     #                 return function(*args, **kwargs)
     #             except:
-    #                 while True:
-    #                     answer = input("\nConnection error! Try again? 'n' to quit : ")
-    #                     if answer == "n":
-    #                         exit()
-    #                     else:
-    #                         break
-
+    #                 answer = input("\nCONNECTION ERROR! Try again? 'n' to quit : ")
+    #                 if answer == "n":
+    #                     exit()
     #     return decorated
 
     # @try_except_decorator
@@ -45,12 +41,9 @@ class WikipediaScraper:
             try:
                 return self.session.get(url)
             except:
-                while True:
-                    answer = input("\nCONNECTION ERROR! Try again? 'n' to quit : ")
-                    if answer == "n":
-                        exit()
-                    else:
-                        break
+                answer = input("\nCONNECTION ERROR! Try again? 'n' to quit : ")
+                if answer == "n":
+                    exit()
 
     # @try_except_decorator
     def make_api_request(self, endpoint="", cookies=None, params={}):
@@ -60,12 +53,10 @@ class WikipediaScraper:
                     self.base_url + endpoint, cookies=cookies, params=params
                 )
             except:
-                while True:
-                    answer = input("\nCONNECTION ERROR! Try again? 'n' to quit : ")
-                    if answer == "n":
-                        exit()
-                    else:
-                        break
+                answer = input("\nCONNECTION ERROR! Try again? 'n' to quit : ")
+                if answer == "n":
+                    exit()
+
 
     def refresh_cookie(self) -> object:
         """Checks the API cookie status, returning the existing or new cookie object."""
