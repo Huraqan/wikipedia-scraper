@@ -3,8 +3,8 @@
 
 ## Description
 This script will query an API for a list of high ranking scumbags from vairous countries.
-Biographies will subsequently be scraped from wikipedia for each and every scumbag.
-Data will be stored as a JSON file, and a shortened amount of data will be stored as a CSV file.
+First paragraphs of biographies will subsequently be scraped from wikipedia for each and every scumbag.
+Data will be stored as a JSON file, and a smaller amount of data will be stored as a CSV file.
 
 ## Setup
 - Python interpreter is needed: install python from https://www.python.org/downloads/
