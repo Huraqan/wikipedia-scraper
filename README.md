@@ -1,10 +1,12 @@
 # POWER-DUDES Wiki-Scraper
-![python version](https://img.shields.io/badge/python-v3.12.1-green?logo=python) ![build version](https://img.shields.io/badge/build-v0.06-blue)
+![python version](https://img.shields.io/badge/python-v3.12.1-green?logo=python) ![build version](https://img.shields.io/badge/build-v0.07-blue)
 
 ## Description
 This script will query an API for a list of high ranking scumbags from vairous countries.
 First paragraphs of biographies will subsequently be scraped from wikipedia for each and every scumbag.
 Data will be stored as a JSON file, and a smaller amount of data will be stored as a CSV file.
+
+**NOW USING ASYNCIO FOR MUCH FASTER REQUESTS**
 
 ## Setup
 - Python interpreter is needed: install python from https://www.python.org/downloads/
