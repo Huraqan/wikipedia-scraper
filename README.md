@@ -10,7 +10,7 @@ Data will be stored as a JSON file, and a smaller amount of data will be stored 
 - Python interpreter is needed: install python from https://www.python.org/downloads/
 - Make sure to install the required packages by executing the following command: `pip install -r requirements.txt`
 
-## Uage
+## Usage
 Double click the `main.py` file to launch the script.
 Alternatively you an execute from an open terminal, from the project directory: `python main.py`
 
