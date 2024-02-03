@@ -1,6 +1,7 @@
 # ouput files
 output_json.json
 output_csv.csv
+all_text.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

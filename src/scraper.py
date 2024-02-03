@@ -6,6 +6,9 @@ from pandas import DataFrame
 from bs4 import BeautifulSoup
 from requests import Session
 
+# my_dict.pop("key", None)
+# del my_dict["key"]
+
 class WikipediaScraper:
     """
     WikipediaScraper class for scraping the first paragraph of country leaders biographies.
@@ -14,14 +17,21 @@ class WikipediaScraper:
     """
 
     def __init__(self, session: Session):
+        self.session: Session = session
+        self.leaders_data: dict = {}
+        ## API
         self.base_url: str = "https://country-leaders.onrender.com"
         self.countries_endpoint: str = "/countries"
         self.leaders_endpoint: str = "/leaders"
         self.cookies_endpoint: str = "/cookie"
         self.check_endpoint: str = "/check"
-        self.leaders_data: dict = {}
-        self.session: Session = session
         self.cookie: object = self.request_cookie()
+        ## REGEX
+        self.compiled_brackets = compile(r"\[[^\]]*\]")
+        self.compiled_parentheses = compile(r"(\(/[^\)]+\)|\( ?\))")
+        self.compiled_commas = compile(r" ?,( *,)*")
+        self.compiled_spaces = compile(r"  +")
+        self.compiled_par_comma = compile(r"\(, ?")
 
     def try_except_decorator(function):
         def decorated(*args, **kwargs):
@@ -43,7 +53,7 @@ class WikipediaScraper:
         return self.session.get(
             self.base_url + endpoint, cookies=cookies, params=params
         )
-
+    
     def refresh_cookie(self) -> object:
         """Checks the API cookie status, returning the existing or new cookie object."""
         print("\nChecking if cookie is still valid...")
@@ -52,14 +62,10 @@ class WikipediaScraper:
 
         match check_request.status_code:
             case 200:
-                print(
-                    f"\nStatus: {check_request.status_code} Cookie still fresh. Using cookie."
-                )
+                print(f"\nStatus: {check_request.status_code} Cookie still fresh. Using cookie.")
                 return self.cookie
             case 422:
-                print(
-                    f"\nStatus: {check_request.status_code} Cookie stale! Refreshing cookie..."
-                )
+                print(f"\nStatus: {check_request.status_code} Cookie stale! Refreshing cookie...")
             case 403:
                 print(f"\nStatus: {check_request.status_code} FORBIDDEN")
 
@@ -106,13 +112,28 @@ class WikipediaScraper:
 
         country_leaders = leaders_request.json()
         self.leaders_data[country] = country_leaders
+    
+    async def request_wiki_page(self, wikipedia_url: str, country: str, i: int) -> str:
+        """Request and store html content of leader wikipedia page using AsyncClient"""
+        print(f"\n    STARTING SCRAPING OF {wikipedia_url[:40]}...")
+        
+        wikipedia_request = await self.make_simple_request(wikipedia_url)
+        self.leaders_data[country][i]["wikipedia_html"] = wikipedia_request.text
+        self.leaders_data[country][i]["paragraph"] = "Text not parsed yet..."
+        return "Text not parsed yet..."
 
-    def get_first_paragraph(self, wikipedia_url: str, country: str, i: int) -> str:
-        """Retrieves and returns the first paragraph from a Wikipedia URL."""
-        print(f"\n{wikipedia_url}\n")
+    def parse_html(self):
+        for country, country_leaders in self.leaders_data.items():
+            for i, leader in enumerate(country_leaders):
+                paragraph = self.parse_first_paragraph(leader["wikipedia_url"], country, i)
+                
+                print(f"\n{leader["first_name"]}: {paragraph}\n")
 
-        wikipedia_request = self.make_simple_request(wikipedia_url)
-        soup = BeautifulSoup(wikipedia_request.text, "html.parser")
+    def parse_first_paragraph(self, wikipedia_url: str, country: str, i: int) -> str:
+        """Parses the html content and both stores and returns first paragraph."""
+        print(f"\nPARSING:  {wikipedia_url}\n")
+    
+        soup = BeautifulSoup(self.leaders_data[country][i]["wikipedia_html"], "html.parser")
 
         ## Narrowing it down to the content div
         content_div = soup.find(
@@ -140,35 +161,39 @@ class WikipediaScraper:
             for sup_tag in paragraph.find_all(name="sup"):
                 print("- Decomposing <sup> tag:", sup_tag.text)
                 sup_tag.decompose()
+            
+            for span_tag in paragraph.find_all(name="span"):
+                print("- Decomposing <span> tag:", span_tag.text)
+                span_tag.decompose()
+            
+            # print(f"\nFINAL SOUP: {paragraph}\n")
 
             ## Regex cleanup
-            paragraph = self.clean_text(paragraph.text)
+            paragraph_text = self.clean_text(paragraph.text)
 
-            ## Store
-            self.leaders_data[country][i]["paragraph"] = paragraph
-
-            return paragraph[:70] + "..."
+            ## Store in dict
+            self.leaders_data[country][i]["paragraph"] = paragraph_text
+            
+            del self.leaders_data[country][i]["wikipedia_html"]
+            
+            return paragraph_text#[:70] + "..."
 
         return "\n\n    !!! NOTING FOUND !!!\n\n"
 
-    @staticmethod
-    def clean_text(text: str) -> str:
+    # @staticmethod
+    def clean_text(self, text: str) -> str:
         """
         Returns the passed string cleaned of (most) undesired parts.
         Removes brackets and spacial parentheses cases, and their content.
         Removes extra successive commas, and all extra spaces.
         """
-        compiled_brackets = compile(r"\[[^\]]*\]")
-        compiled_parentheses = compile(r"\(/[^\)]+\)")
-        compiled_commas = compile(r" ?,( *,)*")
-        compiled_spaces = compile(r"  +")
-
         text_length = len(text)
 
-        text = compiled_brackets.sub("", text)
-        text = compiled_parentheses.sub("", text)
-        text = compiled_spaces.sub(" ", text)
-        text = compiled_commas.sub(",", text)
+        text = self.compiled_brackets.sub("", text)
+        text = self.compiled_parentheses.sub("", text)
+        text = self.compiled_spaces.sub(" ", text)
+        text = self.compiled_commas.sub(",", text)
+        text = self.compiled_par_comma.sub("(", text)
 
         if text_length > len(text):
             print(f"- Regex shortened text by: {text_length - len(text)} characters.")
@@ -176,14 +201,26 @@ class WikipediaScraper:
             print("- Regex had nothing to clean up...")
 
         return text
-
+    
+    def to_all_text_file(self, filename: str):
+        with open(filename, "w+") as file:
+            for leaders in self.leaders_data.values():
+                for leader in leaders:
+                    try:
+                        file.write(f"{leader['first_name']} {leader['last_name']} : {leader['paragraph']}\n")
+                    except:
+                        file.write(f"{leader['first_name']} {leader['last_name']} : COULD NOT WRITE DATA\n")
+            print(f"Saved TXT file as: {filename}")
+    
     def to_json_file(self, filename: str):
         """
         Stores the data structure into a JSON file with the specified name.
         """
         with open(filename, "w") as file:
             json.dump(self.leaders_data, file)
-
+            print(f"Saved JSON file as: {filename}")
+        
+    
     def to_csv_file(self, filename: str):
         """
         Stores the data structure into a CSV file with the specified name.
@@ -202,3 +239,24 @@ class WikipediaScraper:
 
         df = DataFrame.from_dict(leaders_summary)
         df.to_csv(filename, index=False, header=True)
+        print(f"Saved CSV file as: {filename}")
+    
+    def pick_countries(self) -> list:
+        countries = self.get_countries()
+
+        while True:
+            answer = input(
+                f"\nPick one or more countries from {countries}"
+                + " separated by a comma or pick 'all': "
+            )
+
+            if answer == "all":
+                return countries
+
+            answer_list = answer.replace(" ", "").lower().split(",")
+            answer_list = [answer for answer in answer_list if answer in countries]
+
+            if len(answer_list) > 0:
+                return answer_list
+            else:
+                print("\nWrong input. Two letters per country, separated by a comma.\n")
