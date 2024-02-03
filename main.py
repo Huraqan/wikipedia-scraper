@@ -1,11 +1,4 @@
-################################
-### venv-ws\Scripts\activate ###
-### personal reminder...     ###
-################################
-
 import asyncio
-import os
-
 from time import perf_counter
 
 from httpx import AsyncClient
@@ -13,16 +6,13 @@ from requests import Session
 
 from src.scraper import WikipediaScraper
 
+
 async def async_request(name: str, url: str, country: str, i: int):
-    # Await respone
     first_paragraph = await scraper.request_wiki_page(url, country, i)
-    
-    # print(f"\n{name}: {first_paragraph}\n")
 
     return first_paragraph
 
 async def async_loop(scraper: WikipediaScraper):
-    # Create shared session for all of your requests
     async with AsyncClient() as session:
         scraper.session = session
         tasks = []
@@ -40,10 +30,7 @@ async def async_loop(scraper: WikipediaScraper):
                     )
                 )
 
-        # Now that all the tasks are registred, run them
-        responses = await asyncio.gather(*tasks)
-
-        # print(type(responses), responses)
+        await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
     print(
@@ -83,4 +70,3 @@ if __name__ == "__main__":
     print(f"\n\nALL DONE! Successfully scraped scoundrels from: {picked_countries}\n\n")
     
     input("Press ENTER to quit: ")
-    # os.system('pause')

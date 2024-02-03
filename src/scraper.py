@@ -1,13 +1,10 @@
-# import csv
 import json
 from re import compile
 
-from pandas import DataFrame
 from bs4 import BeautifulSoup
+from pandas import DataFrame
 from requests import Session
 
-# my_dict.pop("key", None)
-# del my_dict["key"]
 
 class WikipediaScraper:
     """
@@ -135,7 +132,7 @@ class WikipediaScraper:
     
         soup = BeautifulSoup(self.leaders_data[country][i]["wikipedia_html"], "html.parser")
 
-        ## Narrowing it down to the content div
+        ## Diluting soup down to the content div
         content_div = soup.find(
             name="div", attrs={"class": "mw-content-ltr mw-parser-output"}
         )
@@ -148,11 +145,11 @@ class WikipediaScraper:
             print("Can't find rtl content, continuing with full page...\n")
             content_div = soup
 
-        ## Cleaning of all intrusive and unnecessary divs
+        ## Boiling off all intrusive and unnecessary divs
         for tag in content_div.find_all(name="div"):
             tag.decompose()
 
-        ## Finding the first paragraph
+        ## Slurping the first proper paragraph out of the soup
         for paragraph in content_div.find_all(name="p"):
             if not paragraph.find(name="b"):
                 continue
@@ -166,8 +163,6 @@ class WikipediaScraper:
                 print("- Decomposing <span> tag:", span_tag.text)
                 span_tag.decompose()
             
-            # print(f"\nFINAL SOUP: {paragraph}\n")
-
             ## Regex cleanup
             paragraph_text = self.clean_text(paragraph.text)
 
