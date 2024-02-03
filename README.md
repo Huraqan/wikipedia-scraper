@@ -13,7 +13,7 @@ Some paragraphs might not be stored succesfully in the txt file due to current l
 
 ## Version history
 **---- v 0.07:**
-- Multiprocessing: Implemented with AsyncClient
+- Multiprocessing: Implemented faster requests with AsyncClient
 - Text cleanup: Improved BS4 tag filtering
 - Text cleanup: Improved REGEX filtering
 
@@ -27,7 +27,13 @@ Alternatively you an execute from an open terminal, from the project directory: 
 
 You can pick a country from a list provided by the api.
 
-Data is stored as `output_json.json` and `output_csv.scv`.
+Data is stored as `output_json.json`, `output_csv.scv` and `all_text.txt`.
+
+Note that the `JSON` file will contain all data including details on each leader.
+
+Data in the `CSV` file will be limited to the following fields: `Country`, `Leader` and `Paragraph`.
+
+For the `TXT` file, data will only consist of a compilation of a leader name and its associated paragraph. All text might not always be successfully written to the `TXT` file due to special character encodings.
 
 ## Enjoy scraping scoundrels!
 ![alt text](image.png)
